@@ -1,0 +1,48 @@
+/* One centered classified token readout under the composer, matching the
+   sibling stats row's 13/20 tertiary tier. Each cell is label + compact count;
+   the cost figure closes the row in the secondary tone. */
+
+.root {
+  display: flex;
+  justify-content: center;
+  max-width: var(--dsh-chat-content-width);
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 4px calc(var(--dsh-composer-side-clearance) + 16px) 0px;
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  line-height: calc(20px + var(--dsh-content-font-delta-secondary, 0px));
+}
+
+.readout {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sep {
+  opacity: 0.5;
+}
+
+.name {
+  opacity: 0.72;
+}
+
+.value {
+  color: var(--dsw-alias-label-secondary);
+}
+
+.cost {
+  color: var(--dsw-alias-label-secondary);
+}

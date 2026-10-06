@@ -442,6 +442,38 @@ export interface Config {
 
 来源：[`packages/client/hmr/src/index.ts:31`](../packages/client/hmr/src/index.ts)
 
+<a id="deepseek-aidsh-client-ui-token-usage"></a>
+
+## `@deepseek-ai/dsh-client-ui-token-usage`
+
+需要：`sessionProjections`
+
+```ts config-catalog
+/** Token-usage readout runtime configuration. */
+export interface Config {
+  /**
+   * Prices in CNY per million tokens, keyed by model-id prefix (the longest
+   * matching prefix wins). Defaults to the advisory DeepSeek official table;
+   * a model absent from the table shows tokens without a cost figure.
+   */
+  pricing?: Record<string, ModelPrice>
+  /** Symbol prefixed to the cost figure. */
+  currencySymbol?: string
+}
+
+/** Price of one model route in CNY per million tokens. */
+export interface ModelPrice {
+  /** Prompt tokens that miss the cache (and cache-write tokens). */
+  inputMiss: number
+  /** Prompt tokens served from the cache. */
+  inputHit: number
+  /** Completion tokens, reasoning included. */
+  output: number
+}
+```
+
+来源：[`packages/client/ui-token-usage/src/index.ts:17`](../packages/client/ui-token-usage/src/index.ts)
+
 <a id="deepseek-aidsh-compaction-basic"></a>
 
 ## `@deepseek-ai/dsh-compaction-basic`

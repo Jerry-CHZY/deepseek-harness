@@ -260,6 +260,11 @@
     - id: ui-chat
       name: '@deepseek-ai/dsh-client-ui-chat'
 
+    # Classified per-conversation token usage under the composer, priced by the
+    # plugin's configurable table. Remove this entry to turn the readout off.
+    - id: ui-token-usage
+      name: '@deepseek-ai/dsh-client-ui-token-usage'
+
     # Official occupants for the generic sidebar and conversation brand slots.
     - id: ui-brand-official
       name: '@deepseek-ai/dsh-client-ui-brand-official'
