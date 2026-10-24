@@ -7,9 +7,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
-import type { TokenUsageProjection } from '@deepseek-ai/dsh-token-meter/client'
+import type { ContextPressureProjection, TokenUsageProjection } from '@deepseek-ai/dsh-token-meter/client'
 import { TokenUsageDock, type TokenUsageDockProps } from '../src/client/TokenUsageDock.tsx'
-import type { PricingProjection } from '../src/pricing.ts'
+import type { PricingProjection, TokenCostBackfillProjection } from '../src/pricing.ts'
 import { zh } from '../src/client/locales.ts'
 
 afterEach(cleanup)
@@ -38,6 +38,9 @@ function renderDock(options: {
   viaNext?: boolean
   /** Explicitly `undefined` models the projection arriving without a value. */
   pricing?: PricingProjection | undefined
+  backfill?: TokenCostBackfillProjection | undefined
+  /** Explicitly `undefined` models the projection arriving without a value. */
+  pressure?: ContextPressureProjection | undefined
 } = {}): void {
   const modelSelection = options.model === undefined
     ? undefined
@@ -48,6 +51,8 @@ function renderDock(options: {
     tokenUsage: options.usage,
     modelSelection,
     tokenPricing: 'pricing' in options ? options.pricing : PRICING,
+    tokenCostBackfill: options.backfill,
+    contextPressure: options.pressure,
   }
   const props = {
     t,
@@ -79,7 +84,7 @@ describe('TokenUsageDock', () => {
       model: 'test-model',
     })
     const readout = screen.getByRole('group')
-    expect(readout.textContent).toBe('输入12.3K·缓存读1.2K·缓存写300·输出4.5K≈¥0.061')
+    expect(readout.textContent).toBe('合计18.3K·输入12.3K·缓存读1.2K·缓存写300·输出4.5K≈¥0.061')
   })
 
   it('drops zero cache buckets and shows the full buckets exactly', () => {
@@ -168,6 +173,66 @@ describe('TokenUsageDock', () => {
       model: 'test-model',
     })
     expect(screen.getByRole('group').getAttribute('aria-label'))
-      .toBe('本会话 token 用量：输入 2K，缓存读 0，缓存写 0，输出 1K · 估算花费 ¥0.012')
+      .toBe('本会话 token 用量：合计 3K，输入 2K，缓存读 0，缓存写 0，输出 1K · 估算花费 ¥0.012')
+  })
+
+  it('shows context occupancy against the advertised window', () => {
+    renderDock({
+      usage: usage({ uncachedInputTokens: 1_000, outputTokens: 1 }),
+      model: 'test-model',
+      pressure: { projectedTokens: 84_000, contextWindow: 128_000 },
+    })
+    const readout = screen.getByRole('group')
+    expect(readout.textContent).toContain('上下文84K/128K')
+    expect(readout.getAttribute('aria-label')).toContain('上下文已用 84K/128K')
+  })
+
+  it('shows the used context alone until a route advertises a window', () => {
+    renderDock({
+      usage: usage({ uncachedInputTokens: 1_000, outputTokens: 1 }),
+      model: 'test-model',
+      pressure: { pressureTokens: 5_200 },
+    })
+    expect(screen.getByRole('group').textContent).toContain('上下文5.2K')
+  })
+
+  it('omits the context cell while the pressure projection is absent', () => {
+    renderDock({ usage: usage({ uncachedInputTokens: 1_000, outputTokens: 1 }), model: 'test-model' })
+    expect(screen.getByRole('group').textContent).not.toContain('上下文')
+  })
+
+  it('points at the report when the host backfill could not price a route', () => {
+    renderDock({
+      usage: usage({ uncachedInputTokens: 1_000, outputTokens: 1 }),
+      model: 'test-model',
+      backfill: {
+        hasPricedUsage: false,
+        unpricedRoutes: ['openai/gpt-x'],
+        filePath: '/work/TOKEN_COST.md',
+      },
+    })
+    expect(screen.getByRole('note').textContent)
+      .toContain('历史金额回填文件 /work/TOKEN_COST.md')
+  })
+
+  it('explains the missing report when the session records no working directory', () => {
+    renderDock({
+      usage: usage({ uncachedInputTokens: 1_000, outputTokens: 1 }),
+      model: 'test-model',
+      backfill: { hasPricedUsage: false, unpricedRoutes: ['openai/gpt-x'], filePath: null },
+    })
+    expect(screen.getByRole('note').textContent).toContain('本会话未记录工作目录')
+  })
+
+  it('renders no notice while the backfill projection is absent or fully priced', () => {
+    renderDock({ usage: usage({ uncachedInputTokens: 10, outputTokens: 1 }), model: 'test-model' })
+    expect(screen.queryByRole('note')).toBeNull()
+    cleanup()
+    renderDock({
+      usage: usage({ uncachedInputTokens: 10, outputTokens: 1 }),
+      model: 'test-model',
+      backfill: { hasPricedUsage: true, unpricedRoutes: [], filePath: '/work/TOKEN_COST.md' },
+    })
+    expect(screen.queryByRole('note')).toBeNull()
   })
 })

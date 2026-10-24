@@ -459,6 +459,8 @@ export interface Config {
   pricing?: Record<string, ModelPrice>
   /** Symbol prefixed to the cost figure. */
   currencySymbol?: string
+  /** History backfill; the defaults run it against the advisory price table. */
+  backfill?: BackfillConfig
 }
 
 /** Price of one model route in CNY per million tokens. */
@@ -470,9 +472,54 @@ export interface ModelPrice {
   /** Completion tokens, reasoning included. */
   output: number
 }
+
+/** First-install history backfill of the archived session corpus. */
+export interface BackfillConfig {
+  /**
+   * Whether the plugin backfills archived sessions and publishes backfill
+   * coverage. `false` leaves the browser notice unregistered too.
+   * @default true
+   */
+  enabled?: boolean
+  /**
+   * Prices in CNY per million tokens, keyed by model-id prefix (the longest
+   * matching prefix wins). Each pair is `[offPeak, peak]`. Defaults to the
+   * advisory DeepSeek table, whose off-peak column is half its peak column; a
+   * route absent from the table is reported as needing a price.
+   */
+  pricing?: Record<string, BackfillPrice>
+  /**
+   * Peak windows in Beijing time, replacing the defaults entirely. Defaults
+   * are the weekday windows 09:00–12:00 and 14:00–18:00.
+   */
+  peakHours?: PeakWindow[]
+}
+
+/** One model route's peak and off-peak prices, in CNY per million tokens. */
+export interface BackfillPrice {
+  /** Uncached prompt tokens, billed with cache-write tokens. */
+  inputMiss: PricePair
+  /** Prompt tokens served from the cache. */
+  inputHit: PricePair
+  /** Completion tokens, reasoning included. */
+  output: PricePair
+}
+
+/** One peak-rate window in Beijing time. */
+export interface PeakWindow {
+  /** Weekdays the window covers, `0` = Sunday through `6` = Saturday. */
+  days: number[]
+  /** Inclusive `HH:MM` start. */
+  start: string
+  /** Exclusive `HH:MM` end. */
+  end: string
+}
+
+/** One price pair as `[offPeak, peak]`, in CNY per million tokens. */
+export type PricePair = readonly [offPeak: number, peak: number]
 ```
 
-来源：[`packages/client/ui-token-usage/src/index.ts:17`](../packages/client/ui-token-usage/src/index.ts)
+来源：[`packages/client/ui-token-usage/src/index.ts:50`](../packages/client/ui-token-usage/src/index.ts)
 
 <a id="deepseek-aidsh-compaction-basic"></a>
 

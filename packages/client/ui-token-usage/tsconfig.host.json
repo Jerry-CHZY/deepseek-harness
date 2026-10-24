@@ -7,6 +7,9 @@
   },
   "files": [
     "src/index.ts",
+    "src/backfill.ts",
+    "src/command.ts",
+    "src/format.ts",
     "src/pricing.ts",
     "src/projection.ts"
   ],
@@ -18,7 +21,22 @@
       "path": "../../../vendor/schemastery"
     },
     {
+      "path": "../../core/session"
+    },
+    {
+      "path": "../../interaction/commands"
+    },
+    {
+      "path": "../../llm/llm"
+    },
+    {
+      "path": "../../llm/llm-retry"
+    },
+    {
       "path": "../../llm/token-meter"
+    },
+    {
+      "path": "../../session-query/session-query"
     },
     {
       "path": "../../session/session-projection"

@@ -34,6 +34,15 @@ describe('priceForModel', () => {
     expect(priceForModel('other-model', DEFAULT_PRICING)).toBeUndefined()
   })
 
+  it('skips a longer-looking entry that does not start the model id, and a shorter one after it', () => {
+    const table = {
+      'deepseek-v4-flash': { inputMiss: 2, inputHit: 2, output: 2 },
+      other: { inputMiss: 9, inputHit: 9, output: 9 },
+      'deepseek-v4': { inputMiss: 1, inputHit: 1, output: 1 },
+    }
+    expect(priceForModel('deepseek-v4-flash-2026-09', table)).toBe(table['deepseek-v4-flash'])
+  })
+
   it('resolves the vision route to the longer flash entry, not the base flash price', () => {
     expect(priceForModel('deepseek-v4-flash-vision-exp', DEFAULT_PRICING))
       .toBe(DEFAULT_PRICING['deepseek-v4-flash-vision-exp'])

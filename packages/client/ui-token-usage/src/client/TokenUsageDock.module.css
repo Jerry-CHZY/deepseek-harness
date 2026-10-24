@@ -1,9 +1,11 @@
 /* One centered classified token readout under the composer, matching the
    sibling stats row's 13/20 tertiary tier. Each cell is label + compact count;
-   the cost figure closes the row in the secondary tone. */
+   the cost figure closes the row in the secondary tone. An unpriceable-route
+   notice wraps to its own centered line below the readout. */
 
 .root {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   max-width: var(--dsh-chat-content-width);
   width: 100%;
@@ -45,4 +47,10 @@
 
 .cost {
   color: var(--dsw-alias-label-secondary);
+}
+
+.notice {
+  flex-basis: 100%;
+  text-align: center;
+  color: var(--dsw-alias-label-tertiary);
 }

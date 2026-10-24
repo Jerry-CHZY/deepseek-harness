@@ -9,6 +9,8 @@
  * The table reaches the browser as the `tokenPricing` session projection
  * because browser plugin rows carry no `config`; the host half registers the
  * configured table and every session projects the same deployment constant.
+ * The module also owns the `tokenCostBackfill` projection's value — the
+ * browser notice's view of which routes the backfill price table missed.
  *
  * @module @deepseek-ai/dsh-client-ui-token-usage/pricing
  */
@@ -33,14 +35,27 @@ export interface PricingProjection {
   readonly currencySymbol: string
 }
 
+/** What the historical-cost backfill found for one session, read by the composer notice. */
+export interface TokenCostBackfillProjection {
+  /** Whether the session used at least one route the backfill price table prices. */
+  readonly hasPricedUsage: boolean
+  /** Routes (`provider/model`) the price table does not cover, deduplicated in first-seen order. */
+  readonly unpricedRoutes: readonly string[]
+  /** Report path under the session working directory, or null when the header records none. */
+  readonly filePath: string | null
+}
+
 declare module '@deepseek-ai/dsh-session-projection/types' {
   interface SessionProjectionMap {
     /** Deployment token price table for the composer readout's cost estimate. */
     tokenPricing: PricingProjection
+    /** Historical-cost backfill coverage for the composer pricing notice. */
+    tokenCostBackfill: TokenCostBackfillProjection
   }
 
   interface SessionProjectionStateMap {
     tokenPricing: PricingProjection
+    tokenCostBackfill: TokenCostBackfillProjection
   }
 }
 
@@ -59,19 +74,21 @@ export const DEFAULT_PRICING: Readonly<Record<string, ModelPrice>> = Object.free
 })
 
 /**
- * Resolve a model id against the price table by longest matching prefix.
+ * Resolve a model id against a price table by longest matching prefix.
  *
  * Prefixes, not exact ids, because adapters append route suffixes (vision,
- * dated snapshots) that share the base model's price.
+ * dated snapshots) that share the base model's price. The value type is open
+ * because the readout's per-token price and the backfill's peak/off-peak pairs
+ * both key off the same prefix rule.
  * @param model - the session's last-used model id.
- * @param table - configured prices keyed by model-id prefix.
- * @returns the matched price, or undefined when no prefix matches.
+ * @param table - prices keyed by model-id prefix.
+ * @returns the matched entry, or undefined when no prefix matches.
  */
-export function priceForModel(
+export function priceForModel<T>(
   model: string,
-  table: Readonly<Record<string, ModelPrice>>,
-): ModelPrice | undefined {
-  let best: ModelPrice | undefined
+  table: Readonly<Record<string, T>>,
+): T | undefined {
+  let best: T | undefined
   let bestLength = 0
   for (const [prefix, price] of Object.entries(table)) {
     if (prefix.length > bestLength && model.startsWith(prefix)) {
